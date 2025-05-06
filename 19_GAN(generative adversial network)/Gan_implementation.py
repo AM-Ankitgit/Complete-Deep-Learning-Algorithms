@@ -1,8 +1,29 @@
 # %%
 from keras.datasets.cifar10 import load_data
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print(gpus)
+for gpu in gpus:
+
+    tf.config.experimental.set_memory_growth(gpu, True)
+
+
+
+
+
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print("Memory growth enabled for:", gpus)
+    except RuntimeError as e:
+        print("RuntimeError:", e)
 
 # %%
 import pandas as pd
+
+
 # %%
 import matplotlib.pyplot as plt
 
@@ -72,7 +93,7 @@ def define_discrimintor(in_shape=(32, 32, 3)):
 model = define_discrimintor()
 
 # %%
-model
+# model.train_on_batch(X_real,Y_real)
 
 # %%
 model.summary()
@@ -90,9 +111,9 @@ def load_real_sample():
 
 # %%
 
-x = load_real_sample()
-x[0]
-
+x_real_load = load_real_sample()
+x_real_load[0]
+plt.imshow(x_real_load[0])
 # %%
 def generate_real_samples(datasets,n_samples):
     ix = np.random.randint(0,datasets.shape[0],n_samples)
@@ -104,11 +125,74 @@ def generate_real_samples(datasets,n_samples):
 
 
 
-x,y = generate_real_samples(x,64)
-print(x.shape)
+x_real,y_real = generate_real_samples(x_real_load,64)
+
+# model.train_on_batch(x_real,y_real) # if you get error : DNN library is not found.” Problem with tensorflow then you need to install
+# python3 -m pip install 'tensorflow[and-cuda]'
+# print(x_real.shape)
+# plt.imshow(x_real[0])
+
+
+
+
+
 # %%
 
-def generate_fake_samples():
-    pass
+def generate_fake_samples(n_samples):
+    X = np.random.rand(32 * 32 *3 *n_samples)
+    X = -1 + X *2
 
+    X = X.reshape(n_samples,32,32,3)
+
+    Y = np.zeros((n_samples,1))
+    return X,Y
+
+
+# %%
+x_fake,y_fake = generate_fake_samples(64)
+
+
+print(x_fake.shape)
+print(y_fake)
+# %%
+
+plt.imshow(x_fake[0])
+# %%
+plt.imshow(x_fake[1])
+
+
+# %%
+plt.imshow(x_fake[2])
+# %%
+def train_discriminator(model,dataset,n_iter=20,_n_batch=128):
+    half_batch = int(_n_batch/2)
+
+    for i in range(n_iter):
+
+        # get randomly selected real sample
+        X_real,Y_real = generate_real_samples(datasets=dataset,n_samples=half_batch)
+
+        # update discriminator on real samples
+
+        _,real_acc = model.train_on_batch(X_real,Y_real)
+
+        # generate_fake_samples
+        X_fake,Y_fake = generate_fake_samples(half_batch)
+
+        _,fake_acc = model.train_on_batch(X_fake,Y_fake)
+
+        print("%d real=%.0f%% fake=%.0f%%" %(i+1,real_acc*100,fake_acc*100))
+
+
+# %%
+model = define_discrimintor()
+
+dataset = load_real_sample()
+
+train_discriminator(model,dataset)
+# %%
+train_discriminator(model,dataset)
+
+# %%
+train_discriminator(model,dataset)
 # %%
